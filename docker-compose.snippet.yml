@@ -2,8 +2,8 @@
 # Aggiungi questo blocco al tuo docker-compose.yml esistente,
 # all'interno della sezione "services:".
 #
-# Il bridge è raggiungibile SOLO dalla rete interna Docker,
-# non espone nessuna porta sull'host.
+# Il bridge non espone nessuna porta sull'host: è raggiungibile solo
+# dagli altri container nella stessa rete Docker.
 # ─────────────────────────────────────────────────────────────────────────────
 
   notify-bridge:
@@ -15,8 +15,16 @@
       MAIL_FROM:       "${MAIL_FROM}"              # es. notify@tuodominio.com (verificato su Resend)
       MAIL_FROM_NAME:  "${MAIL_FROM_NAME:-ChangeDetection}"
       MAIL_TO:         "${MAIL_TO}"                # es. "tu@email.com,altro@email.com"
-    networks:
-      - changedetection_net                        # stessa rete di changedetection
+    # ── Rete ──────────────────────────────────────────────────────────────────
+    # CASO A — il tuo compose NON ha un blocco "networks:" esplicito:
+    #   Docker Compose mette tutti i servizi sulla stessa rete di default.
+    #   Non serve aggiungere nulla: rimuovi o commenta il blocco networks qui sotto.
+    #
+    # CASO B — il tuo compose HA un blocco "networks:" esplicito (es. changedetection_net):
+    #   Decommenta le righe seguenti e usa il nome della rete già dichiarata.
+    #
+    # networks:
+    #   - changedetection_net
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]

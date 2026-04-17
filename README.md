@@ -55,8 +55,18 @@ Per più destinatari: `MAIL_TO=uno@email.com,due@email.com`
 ### 3. Aggiungi il servizio al docker-compose.yml
 
 Copia il contenuto di `docker-compose.snippet.yml` nella sezione `services:`
-del tuo `docker-compose.yml`. Verifica che il nome della rete interna
-corrisponda a quella usata da changedetection (di solito `changedetection_net`).
+del tuo `docker-compose.yml` esistente, poi gestisci la rete in base alla
+tua configurazione:
+
+**Caso A — nessun blocco `networks:` esplicito nel compose:**
+Docker Compose collega automaticamente tutti i servizi alla stessa rete di
+default. Non aggiungere nulla: `notify-bridge` e changedetection si vedono
+già per nome. Rimuovi o commenta il blocco `networks:` nello snippet.
+
+**Caso B — rete esplicita già dichiarata (es. `changedetection_net`):**
+Decommenta il blocco `networks:` nello snippet e usa il nome della rete
+già presente nel tuo compose. Non ridichiarare il blocco globale `networks:`,
+è già lì.
 
 ### 4. Avvia
 
