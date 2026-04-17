@@ -168,7 +168,7 @@ def _handle_notification(token: str):
         return jsonify({"status": "ok"}), 200
     except Exception as exc:
         log.error("Failed to send email: %s", exc, exc_info=True)
-        return jsonify({"status": "error", "detail": str(exc)}), 500
+        return jsonify({"status": "error", "detail": "Internal server error"}), 500
 
 
 # Support both:
