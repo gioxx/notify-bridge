@@ -1,0 +1,38 @@
+# ── notify-bridge (Resend backend) ───────────────────────────────────────────
+# Aggiungi questo blocco al tuo docker-compose.yml esistente,
+# all'interno della sezione "services:".
+#
+# Il bridge è raggiungibile SOLO dalla rete interna Docker,
+# non espone nessuna porta sull'host.
+# ─────────────────────────────────────────────────────────────────────────────
+
+  notify-bridge:
+    build: ./notify-bridge
+    restart: unless-stopped
+    environment:
+      BRIDGE_TOKEN:    "${BRIDGE_TOKEN}"           # token revocabile, impostalo in .env
+      RESEND_API_KEY:  "${RESEND_API_KEY}"         # re_xxxxxxxxxxxx
+      MAIL_FROM:       "${MAIL_FROM}"              # es. notify@tuodominio.com (verificato su Resend)
+      MAIL_FROM_NAME:  "${MAIL_FROM_NAME:-ChangeDetection}"
+      MAIL_TO:         "${MAIL_TO}"                # es. "tu@email.com,altro@email.com"
+    networks:
+      - changedetection_net                        # stessa rete di changedetection
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+# ── .env (NON committare questo file) ────────────────────────────────────────
+# Crea un file .env nella stessa cartella del docker-compose.yml:
+#
+# BRIDGE_TOKEN=cambia_questo_token_con_uno_casuale
+# RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+# MAIL_FROM=notify@tuodominio.com
+# MAIL_FROM_NAME=ChangeDetection
+# MAIL_TO=destinatario@email.com
+#
+# Genera un token sicuro con:
+#   python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+# ─────────────────────────────────────────────────────────────────────────────
