@@ -84,9 +84,20 @@ def _send_via_resend(subject: str, body_html: str, body_text: str) -> None:
 
 def _verify_token(token_from_url: str) -> bool:
     """Use constant-time comparison after normalizing URL encoding."""
-    normalized_url_token = unquote(token_from_url).strip()
-    normalized_env_token = unquote(BRIDGE_TOKEN).strip()
+    normalized_url_token = _normalize_token(token_from_url)
+    normalized_env_token = _normalize_token(BRIDGE_TOKEN)
     return secrets.compare_digest(normalized_url_token, normalized_env_token)
+
+
+def _normalize_token(token: str) -> str:
+    """Decode URL-encoded tokens until they stop changing."""
+    normalized = token.strip().strip("\"'")
+
+    while True:
+        decoded = unquote(normalized)
+        if decoded == normalized:
+            return decoded
+        normalized = decoded
 
 
 def _extract_message_content(data: dict) -> tuple[str, str, str]:
