@@ -41,6 +41,11 @@ notify-bridge/
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
+Usa un token composto solo da caratteri URL-safe. Evita `/`, `+`, `=`,
+spazi e virgolette. Il comando sopra genera già un token sicuro.
+Puoi anche usare questo generatore già configurato:
+[tools.gioxx.org password generator](https://tools.gioxx.org/en/tools/password-generator/?s=VYtBDsIwDAT_sudcgFtuPCUppkRy4ii2i1DVv6MiQOpxdnZWLIinALVkhLiCqc32QLycAybxZh_tvdOYkhKiDacAludxaF4zDf2hvmoWVsR7Yt251M7_c1qk3K41l9nFv822vQE).
+
 ### 2. Crea il file `.env` (non committarlo mai)
 
 ```env
@@ -51,6 +56,9 @@ MAIL_FROM=notify@tuodominio.com
 MAIL_FROM_NAME=ChangeDetection
 MAIL_TO=destinatario@email.com
 ```
+
+Se imposti un token manualmente, tienilo URL-safe. Usa solo lettere,
+numeri, `_` e `-`.
 
 Per più destinatari: `MAIL_TO=uno@email.com,due@email.com`
 
