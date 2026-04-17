@@ -1,29 +1,36 @@
 """
-notify-bridge: Apprise-compatible HTTP endpoint → Resend API email bridge
-Compatible with changedetection.io's Apprise notification via json:// schema
+notify-bridge: Apprise-compatible HTTP endpoint -> Resend API email bridge
+
+Compatible with changedetection.io Apprise notifications via json:// schema.
 """
 
-import os
 import logging
+import os
 import secrets
+from urllib.parse import unquote
+
 import httpx
-from flask import Flask, request, jsonify, abort
+from flask import Flask, abort, jsonify, request
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 log = logging.getLogger(__name__)
 
-# ── Config from environment ──────────────────────────────────────────────────
-BRIDGE_TOKEN   = os.environ["BRIDGE_TOKEN"]         # required, no default
-BRIDGE_PORT    = int(os.environ.get("BRIDGE_PORT", "5001"))  # default 5001 to avoid conflict with changedetection
-RESEND_API_KEY = os.environ["RESEND_API_KEY"]        # re_xxxxxxxxxxxx
-MAIL_FROM      = os.environ["MAIL_FROM"]             # must be a Resend-verified domain address
+# Configuration from environment
+BRIDGE_TOKEN = os.environ["BRIDGE_TOKEN"]
+BRIDGE_PORT = int(os.environ.get("BRIDGE_PORT", "5001"))
+RESEND_API_KEY = os.environ["RESEND_API_KEY"]
+MAIL_FROM = os.environ["MAIL_FROM"]
 MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "ChangeDetection")
-MAIL_TO        = os.environ["MAIL_TO"]               # comma-separated recipients
+MAIL_TO = os.environ["MAIL_TO"]
 
 RESEND_API_URL = "https://api.resend.com/emails"
 
-# Cloudflare is in front of Resend — use a realistic User-Agent
+# Cloudflare is in front of Resend, so use a realistic User-Agent
 HTTP_HEADERS = {
     "Authorization": f"Bearer {RESEND_API_KEY}",
     "Content-Type": "application/json",
@@ -34,28 +41,32 @@ HTTP_HEADERS = {
     ),
 }
 
-# httpx client with reasonable timeouts (connect 5s, read 15s)
+# HTTP client with reasonable timeouts
 _client = httpx.Client(timeout=httpx.Timeout(15.0, connect=5.0))
 
 
 def _get_recipients() -> list[str]:
-    return [r.strip() for r in MAIL_TO.split(",") if r.strip()]
+    """Return the recipient list parsed from MAIL_TO."""
+    return [recipient.strip() for recipient in MAIL_TO.split(",") if recipient.strip()]
 
 
 def _send_via_resend(subject: str, body_html: str, body_text: str) -> None:
+    """Send the email through Resend."""
     recipients = _get_recipients()
     from_field = f"{MAIL_FROM_NAME} <{MAIL_FROM}>"
 
     payload: dict = {
-        "from":    from_field,
-        "to":      recipients,
+        "from": from_field,
+        "to": recipients,
         "subject": subject,
     }
 
     if body_html:
         payload["html"] = body_html
+
     if body_text:
         payload["text"] = body_text
+
     if not body_html and not body_text:
         raise ValueError("Both body_html and body_text are empty")
 
@@ -72,53 +83,108 @@ def _send_via_resend(subject: str, body_html: str, body_text: str) -> None:
 
 
 def _verify_token(token_from_url: str) -> bool:
-    """Constant-time comparison to prevent timing attacks."""
-    return secrets.compare_digest(token_from_url, BRIDGE_TOKEN)
+    """Use constant-time comparison after normalizing URL encoding."""
+    normalized_url_token = _normalize_token(token_from_url)
+    normalized_env_token = _normalize_token(BRIDGE_TOKEN)
+
+    if not _is_ascii_token(normalized_url_token) or not _is_ascii_token(normalized_env_token):
+        return False
+
+    return secrets.compare_digest(normalized_url_token, normalized_env_token)
 
 
-# ── Apprise json:// compatible endpoint ─────────────────────────────────────
-#
-# changedetection.io calls Apprise with:
-#   json://notify-bridge:5001/<TOKEN>
-# which Apprise translates to POST /notify/<TOKEN>
-#
-# Apprise json:// payload:
-# {
-#   "title": "...",
-#   "body":  "...",     # may be HTML
-#   "type":  "info|warning|failure|success"
-# }
-#
-@app.route("/notify/<token>", methods=["POST"])
-def notify(token: str):
+def _normalize_token(token: str) -> str:
+    """Decode URL-encoded tokens until they stop changing."""
+    normalized = token.strip().strip("\"'")
+
+    while True:
+        decoded = unquote(normalized)
+        if decoded == normalized:
+            return decoded
+        normalized = decoded
+
+
+def _is_ascii_token(token: str) -> bool:
+    """Return True only for tokens that can safely reach compare_digest."""
+    try:
+        token.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def _extract_message_content(data: dict) -> tuple[str, str, str]:
+    """
+    Extract title, HTML body and plain text body from an Apprise-like payload.
+
+    Supported payload fields:
+    - title
+    - body
+    - message
+    - body_text
+    - text
+    """
+    title = data.get("title", "ChangeDetection notification")
+
+    raw_body = (
+        data.get("body")
+        or data.get("message")
+        or ""
+    )
+
+    body_text = (
+        data.get("body_text")
+        or data.get("text")
+        or ""
+    )
+
+    is_html = "<" in raw_body and ">" in raw_body
+    body_html = raw_body if is_html else ""
+
+    if not body_text and not is_html:
+        body_text = raw_body
+
+    return title, body_html, body_text
+
+
+def _handle_notification(token: str):
+    """Shared handler for both supported endpoint shapes."""
     if not _verify_token(token):
         log.warning("Rejected request with invalid token from %s", request.remote_addr)
         abort(403)
 
     data = request.get_json(silent=True) or {}
+    log.info("Received notification payload keys: %s", sorted(data.keys()))
     log.debug("Received payload: %s", data)
 
-    title     = data.get("title", "ChangeDetection notification")
-    body      = data.get("body", "")
-    body_text = data.get("body_text", "")   # optional plain-text fallback
-
-    # Detect HTML body
-    is_html = "<" in body and ">" in body
-    body_html = body if is_html else ""
-    if not body_text and not is_html:
-        body_text = body
+    title, body_html, body_text = _extract_message_content(data)
 
     try:
-        _send_via_resend(subject=title, body_html=body_html, body_text=body_text)
+        _send_via_resend(
+            subject=title,
+            body_html=body_html,
+            body_text=body_text,
+        )
         return jsonify({"status": "ok"}), 200
     except Exception as exc:
         log.error("Failed to send email: %s", exc, exc_info=True)
-        return jsonify({"status": "error", "detail": str(exc)}), 500
+        return jsonify({"status": "error", "detail": "Internal server error"}), 500
 
 
-# ── Health check ─────────────────────────────────────────────────────────────
+# Support both:
+# - /notify/<token>
+# - /<token>
+#
+# This makes the bridge compatible with different json:// path translations.
+@app.route("/notify/<token>", methods=["POST"])
+@app.route("/<token>", methods=["POST"])
+def notify(token: str):
+    return _handle_notification(token)
+
+
 @app.route("/health", methods=["GET"])
 def health():
+    """Health check endpoint."""
     return jsonify({"status": "ok"}), 200
 
 
