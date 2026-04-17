@@ -18,6 +18,8 @@ notify-bridge/
 ├── Dockerfile
 ├── requirements.txt
 ├── docker-compose.snippet.yml  # Block to add to your compose file
+├── tests/
+│   └── test_token_validation.py
 ├── README.md
 └── README-IT.md
 ```
@@ -150,3 +152,16 @@ not change.
 | `MAIL_FROM`      | **required**      | Sender, verified domain on Resend                         |
 | `MAIL_FROM_NAME` | `ChangeDetection` | Display name in the "From:" field                         |
 | `MAIL_TO`        | **required**      | Recipients, separated by commas                           |
+
+---
+
+## Testing
+
+Run the local checks with:
+
+```bash
+python -m unittest discover -s tests -v
+python -m py_compile app.py tests/test_token_validation.py
+```
+
+GitHub Actions also runs these checks on pull requests and pushes to `main`.

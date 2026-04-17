@@ -18,6 +18,8 @@ notify-bridge/
 ├── Dockerfile
 ├── requirements.txt
 ├── docker-compose.snippet.yml  # Blocco da aggiungere al tuo compose
+├── tests/
+│   └── test_token_validation.py
 ├── README.md
 └── README-IT.md
 ```
@@ -151,3 +153,16 @@ Il token del bridge non cambia.
 | `MAIL_FROM`      | **obbligatorio**   | Mittente, dominio verificato su Resend                    |
 | `MAIL_FROM_NAME` | `ChangeDetection`  | Nome visualizzato nel campo "Da:"                         |
 | `MAIL_TO`        | **obbligatorio**   | Destinatari, separati da virgola                          |
+
+---
+
+## Test
+
+Esegui i controlli locali con:
+
+```bash
+python -m unittest discover -s tests -v
+python -m py_compile app.py tests/test_token_validation.py
+```
+
+GitHub Actions esegue questi controlli su pull request e push su `main`.

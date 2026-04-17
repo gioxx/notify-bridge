@@ -86,6 +86,10 @@ def _verify_token(token_from_url: str) -> bool:
     """Use constant-time comparison after normalizing URL encoding."""
     normalized_url_token = _normalize_token(token_from_url)
     normalized_env_token = _normalize_token(BRIDGE_TOKEN)
+
+    if not _is_ascii_token(normalized_url_token) or not _is_ascii_token(normalized_env_token):
+        return False
+
     return secrets.compare_digest(normalized_url_token, normalized_env_token)
 
 
@@ -98,6 +102,15 @@ def _normalize_token(token: str) -> str:
         if decoded == normalized:
             return decoded
         normalized = decoded
+
+
+def _is_ascii_token(token: str) -> bool:
+    """Return True only for tokens that can safely reach compare_digest."""
+    try:
+        token.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
 
 
 def _extract_message_content(data: dict) -> tuple[str, str, str]:
