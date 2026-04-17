@@ -1,30 +1,30 @@
 # ── notify-bridge (Resend backend) ───────────────────────────────────────────
-# Aggiungi questo blocco al tuo docker-compose.yml esistente,
-# all'interno della sezione "services:".
+# Add this block to your existing docker-compose.yml,
+# inside the "services:" section.
 #
-# La porta interna di default è 5001 per evitare conflitti con
-# changedetection.io che usa la 5000. Il bridge non espone nessuna
-# porta sull'host: è raggiungibile solo dagli altri container nella
-# stessa rete Docker.
+# The default internal port is 5001 to avoid conflicts with
+# changedetection.io, which uses 5000. The bridge does not expose
+# any host port: it is reachable only by other containers on the
+# same Docker network.
 # ─────────────────────────────────────────────────────────────────────────────
 
   notify-bridge:
     build: ./notify-bridge
     restart: unless-stopped
     environment:
-      BRIDGE_TOKEN:    "${BRIDGE_TOKEN}"           # token revocabile, impostalo in .env
-      BRIDGE_PORT:     "${BRIDGE_PORT:-5001}"      # porta interna (default 5001, non esposta sull'host)
+      BRIDGE_TOKEN:    "${BRIDGE_TOKEN}"           # revocable token, set it in .env
+      BRIDGE_PORT:     "${BRIDGE_PORT:-5001}"      # internal port (default 5001, not exposed on the host)
       RESEND_API_KEY:  "${RESEND_API_KEY}"         # re_xxxxxxxxxxxx
-      MAIL_FROM:       "${MAIL_FROM}"              # es. notify@tuodominio.com (verificato su Resend)
+      MAIL_FROM:       "${MAIL_FROM}"              # e.g. notify@yourdomain.com (verified in Resend)
       MAIL_FROM_NAME:  "${MAIL_FROM_NAME:-ChangeDetection}"
-      MAIL_TO:         "${MAIL_TO}"                # es. "tu@email.com,altro@email.com"
-    # ── Rete ──────────────────────────────────────────────────────────────────
-    # CASO A — il tuo compose NON ha un blocco "networks:" esplicito:
-    #   Docker Compose mette tutti i servizi sulla stessa rete di default.
-    #   Non serve aggiungere nulla: rimuovi o commenta il blocco networks qui sotto.
+      MAIL_TO:         "${MAIL_TO}"                # e.g. "you@email.com,other@email.com"
+    # ── Network ───────────────────────────────────────────────────────────────
+    # CASE A - your compose does NOT have an explicit "networks:" block:
+    #   Docker Compose puts all services on the same default network.
+    #   No extra configuration is needed: remove or comment out the networks block below.
     #
-    # CASO B — il tuo compose HA un blocco "networks:" esplicito (es. changedetection_net):
-    #   Decommenta le righe seguenti e usa il nome della rete già dichiarata.
+    # CASE B - your compose DOES have an explicit "networks:" block (e.g. changedetection_net):
+    #   Uncomment the following lines and use the network name already declared.
     #
     # networks:
     #   - changedetection_net
@@ -35,16 +35,16 @@
       timeout: 5s
       retries: 3
 
-# ── .env (NON committare questo file) ────────────────────────────────────────
-# Crea un file .env nella stessa cartella del docker-compose.yml:
+# ── .env (DO NOT commit this file) ───────────────────────────────────────────
+# Create a .env file in the same folder as docker-compose.yml:
 #
-# BRIDGE_TOKEN=cambia_questo_token_con_uno_casuale
-# BRIDGE_PORT=5001                        # opzionale, cambia solo se 5001 è già occupata
+# BRIDGE_TOKEN=replace_this_with_a_random_token
+# BRIDGE_PORT=5001                        # optional, change only if 5001 is already in use
 # RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
 # MAIL_FROM=notify@tuodominio.com
 # MAIL_FROM_NAME=ChangeDetection
 # MAIL_TO=destinatario@email.com
 #
-# Genera un token sicuro con:
+# Generate a secure token with:
 #   python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 # ─────────────────────────────────────────────────────────────────────────────

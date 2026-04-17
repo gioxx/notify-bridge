@@ -1,87 +1,87 @@
 # notify-bridge
 
-Microservizio bridge che riceve notifiche da **changedetection.io** tramite
-un endpoint compatibile con Apprise (`json://`) e le inoltra via
+Bridge microservice that receives notifications from **changedetection.io**
+through an Apprise-compatible (`json://`) endpoint and forwards them via the
 **[Resend](https://resend.com) API**.
 
-Le credenziali (API key Resend) rimangono confinate nel container Docker e
-non sono mai esposte in changedetection. Il token di autenticazione del bridge
-può essere revocato in qualsiasi momento senza toccare l'account Resend.
+Resend API credentials stay confined to the Docker container and are never
+exposed to changedetection. The bridge authentication token can be revoked at
+any time without touching the Resend account.
 
 ---
 
-## Struttura
+## Structure
 
 ```
 notify-bridge/
-├── app.py                      # Flask app (endpoint + chiamata Resend API)
+├── app.py                      # Flask app (endpoint + Resend API call)
 ├── Dockerfile
 ├── requirements.txt
-├── docker-compose.snippet.yml  # Blocco da aggiungere al tuo compose
-└── README.md
+├── docker-compose.snippet.yml  # Block to add to your compose file
+├── README.md
+└── README-IT.md
 ```
 
 ---
 
-## Prerequisiti
+## Prerequisites
 
-- Un account [Resend](https://resend.com) con **dominio verificato**
-- Una API key Resend (`re_xxxxxxxxxxxx`)
-- L'indirizzo `MAIL_FROM` deve usare il dominio verificato su Resend
-  (es. `notify@tuodominio.com`)
+- A [Resend](https://resend.com) account with a **verified domain**
+- A Resend API key (`re_xxxxxxxxxxxx`)
+- The `MAIL_FROM` address must use the domain verified in Resend
+  (for example `notify@yourdomain.com`)
 
 ---
 
 ## Setup
 
-### 1. Genera un token sicuro per il bridge
+### 1. Generate a secure bridge token
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-### 2. Crea il file `.env` (non committarlo mai)
+### 2. Create the `.env` file (never commit it)
 
 ```env
-BRIDGE_TOKEN=il_token_generato_sopra
-BRIDGE_PORT=5001                        # opzionale, cambia solo se 5001 è già occupata
+BRIDGE_TOKEN=the_token_generated_above
+BRIDGE_PORT=5001                        # optional, change only if 5001 is already in use
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
-MAIL_FROM=notify@tuodominio.com
+MAIL_FROM=notify@yourdomain.com
 MAIL_FROM_NAME=ChangeDetection
-MAIL_TO=destinatario@email.com
+MAIL_TO=recipient@email.com
 ```
 
-Per più destinatari: `MAIL_TO=uno@email.com,due@email.com`
+For multiple recipients: `MAIL_TO=one@email.com,two@email.com`
 
-### 3. Aggiungi il servizio al docker-compose.yml
+### 3. Add the service to docker-compose.yml
 
-Copia il contenuto di `docker-compose.snippet.yml` nella sezione `services:`
-del tuo `docker-compose.yml` esistente, poi gestisci la rete in base alla
-tua configurazione:
+Copy the contents of `docker-compose.snippet.yml` into the `services:`
+section of your existing `docker-compose.yml`, then handle networking based on
+your setup:
 
-**Caso A — nessun blocco `networks:` esplicito nel compose:**
-Docker Compose collega automaticamente tutti i servizi alla stessa rete di
-default. Non aggiungere nulla: `notify-bridge` e changedetection si vedono
-già per nome. Rimuovi o commenta il blocco `networks:` nello snippet.
+**Case A - no explicit `networks:` block in the compose file:**
+Docker Compose automatically connects all services to the default network.
+Do not add anything: `notify-bridge` and changedetection can already see each
+other by name. Remove or comment out the `networks:` block in the snippet.
 
-**Caso B — rete esplicita già dichiarata (es. `changedetection_net`):**
-Decommenta il blocco `networks:` nello snippet e usa il nome della rete
-già presente nel tuo compose. Non ridichiarare il blocco globale `networks:`,
-è già lì.
+**Case B - an explicit network is already declared (for example `changedetection_net`):**
+Uncomment the `networks:` block in the snippet and use the name of the network
+already present in your compose file. Do not redeclare the global `networks:`
+block; it is already there.
 
-> **Nota sulla porta:** changedetection.io usa la porta 5000 internamente.
-> notify-bridge usa la **5001** come default, quindi non c'è conflitto.
-> Entrambe le porte sono interne alla rete Docker e non vengono esposte
-> sull'host. Se anche la 5001 fosse occupata, basta impostare `BRIDGE_PORT`
-> nel `.env` con un valore diverso.
+> **Port note:** changedetection.io uses port 5000 internally. notify-bridge
+> uses **5001** by default, so there is no conflict. Both ports stay inside
+> the Docker network and are not exposed on the host. If 5001 is also in use,
+> just set `BRIDGE_PORT` in `.env` to a different value.
 
-### 4. Avvia
+### 4. Start it
 
 ```bash
 docker compose up -d --build notify-bridge
 ```
 
-### 5. Verifica health
+### 5. Check health
 
 ```bash
 docker compose exec notify-bridge wget -qO- http://localhost:5001/health
@@ -90,55 +90,55 @@ docker compose exec notify-bridge wget -qO- http://localhost:5001/health
 
 ---
 
-## Configurazione in changedetection.io
+## changedetection.io configuration
 
-Vai in **Settings → Notifications** e aggiungi l'URL Apprise:
+Go to **Settings → Notifications** and add the Apprise URL:
 
 ```
-json://notify-bridge:5001/IL_TUO_TOKEN
+json://notify-bridge:5001/YOUR_TOKEN
 ```
 
-- `notify-bridge` → nome del servizio Docker, risolto internamente
-- `5001` → porta interna del bridge (non esposta sull'host)
-- `IL_TUO_TOKEN` → valore di `BRIDGE_TOKEN` nel `.env`
+- `notify-bridge` -> Docker service name, resolved internally
+- `5001` -> internal bridge port, not exposed on the host
+- `YOUR_TOKEN` -> value of `BRIDGE_TOKEN` in `.env`
 
-Se hai cambiato `BRIDGE_PORT`, aggiorna il numero nell'URL di conseguenza.
+If you changed `BRIDGE_PORT`, update the number in the URL accordingly.
 
 ---
 
-## Revocare il token del bridge
+## Revoke the bridge token
 
 ```bash
-# 1. Genera un nuovo token
+# 1. Generate a new token
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
-# 2. Aggiorna BRIDGE_TOKEN nel .env
+# 2. Update BRIDGE_TOKEN in .env
 
-# 3. Riavvia solo il bridge
+# 3. Restart only the bridge
 docker compose up -d notify-bridge
 
-# 4. Aggiorna l'URL in changedetection
+# 4. Update the URL in changedetection
 ```
 
-L'API key Resend non viene mai toccata.
+The Resend API key is never touched.
 
 ---
 
-## Revocare la API key Resend
+## Revoke the Resend API key
 
-Vai su resend.com → API Keys → revoca la chiave, generane una nuova,
-aggiorna `RESEND_API_KEY` nel `.env` e riavvia il container.
-Il token del bridge non cambia.
+Go to resend.com -> API Keys -> revoke the key, generate a new one, update
+`RESEND_API_KEY` in `.env`, and restart the container. The bridge token does
+not change.
 
 ---
 
-## Variabili d'ambiente
+## Environment variables
 
-| Variabile        | Default            | Note                                                      |
-|------------------|--------------------|-----------------------------------------------------------|
-| `BRIDGE_TOKEN`   | **obbligatorio**   | Token di autenticazione del bridge                        |
-| `BRIDGE_PORT`    | `5001`             | Porta interna del container (non esposta sull'host)       |
-| `RESEND_API_KEY` | **obbligatorio**   | API key Resend (`re_...`)                                 |
-| `MAIL_FROM`      | **obbligatorio**   | Mittente, dominio verificato su Resend                    |
-| `MAIL_FROM_NAME` | `ChangeDetection`  | Nome visualizzato nel campo "Da:"                         |
-| `MAIL_TO`        | **obbligatorio**   | Destinatari, separati da virgola                          |
+| Variable         | Default           | Notes                                                     |
+|------------------|-------------------|-----------------------------------------------------------|
+| `BRIDGE_TOKEN`   | **required**      | Bridge authentication token                               |
+| `BRIDGE_PORT`    | `5001`            | Internal container port, not exposed on the host          |
+| `RESEND_API_KEY` | **required**      | Resend API key (`re_...`)                                 |
+| `MAIL_FROM`      | **required**      | Sender, verified domain on Resend                         |
+| `MAIL_FROM_NAME` | `ChangeDetection` | Display name in the "From:" field                         |
+| `MAIL_TO`        | **required**      | Recipients, separated by commas                           |
