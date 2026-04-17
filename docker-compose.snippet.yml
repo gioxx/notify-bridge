@@ -2,8 +2,10 @@
 # Aggiungi questo blocco al tuo docker-compose.yml esistente,
 # all'interno della sezione "services:".
 #
-# Il bridge non espone nessuna porta sull'host: è raggiungibile solo
-# dagli altri container nella stessa rete Docker.
+# La porta interna di default è 5001 per evitare conflitti con
+# changedetection.io che usa la 5000. Il bridge non espone nessuna
+# porta sull'host: è raggiungibile solo dagli altri container nella
+# stessa rete Docker.
 # ─────────────────────────────────────────────────────────────────────────────
 
   notify-bridge:
@@ -11,6 +13,7 @@
     restart: unless-stopped
     environment:
       BRIDGE_TOKEN:    "${BRIDGE_TOKEN}"           # token revocabile, impostalo in .env
+      BRIDGE_PORT:     "${BRIDGE_PORT:-5001}"      # porta interna (default 5001, non esposta sull'host)
       RESEND_API_KEY:  "${RESEND_API_KEY}"         # re_xxxxxxxxxxxx
       MAIL_FROM:       "${MAIL_FROM}"              # es. notify@tuodominio.com (verificato su Resend)
       MAIL_FROM_NAME:  "${MAIL_FROM_NAME:-ChangeDetection}"
@@ -26,8 +29,8 @@
     # networks:
     #   - changedetection_net
     healthcheck:
-      test: ["CMD", "python", "-c",
-             "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      test: ["CMD", "sh", "-c",
+             "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:' + __import__('os').environ.get('BRIDGE_PORT','5001') + '/health')\""]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -36,6 +39,7 @@
 # Crea un file .env nella stessa cartella del docker-compose.yml:
 #
 # BRIDGE_TOKEN=cambia_questo_token_con_uno_casuale
+# BRIDGE_PORT=5001                        # opzionale, cambia solo se 5001 è già occupata
 # RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
 # MAIL_FROM=notify@tuodominio.com
 # MAIL_FROM_NAME=ChangeDetection

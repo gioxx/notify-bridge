@@ -44,6 +44,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ```env
 BRIDGE_TOKEN=il_token_generato_sopra
+BRIDGE_PORT=5001                        # opzionale, cambia solo se 5001 è già occupata
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
 MAIL_FROM=notify@tuodominio.com
 MAIL_FROM_NAME=ChangeDetection
@@ -68,6 +69,12 @@ Decommenta il blocco `networks:` nello snippet e usa il nome della rete
 già presente nel tuo compose. Non ridichiarare il blocco globale `networks:`,
 è già lì.
 
+> **Nota sulla porta:** changedetection.io usa la porta 5000 internamente.
+> notify-bridge usa la **5001** come default, quindi non c'è conflitto.
+> Entrambe le porte sono interne alla rete Docker e non vengono esposte
+> sull'host. Se anche la 5001 fosse occupata, basta impostare `BRIDGE_PORT`
+> nel `.env` con un valore diverso.
+
 ### 4. Avvia
 
 ```bash
@@ -77,7 +84,7 @@ docker compose up -d --build notify-bridge
 ### 5. Verifica health
 
 ```bash
-docker compose exec notify-bridge wget -qO- http://localhost:5000/health
+docker compose exec notify-bridge wget -qO- http://localhost:5001/health
 # → {"status":"ok"}
 ```
 
@@ -88,12 +95,14 @@ docker compose exec notify-bridge wget -qO- http://localhost:5000/health
 Vai in **Settings → Notifications** e aggiungi l'URL Apprise:
 
 ```
-json://notify-bridge:5000/IL_TUO_TOKEN
+json://notify-bridge:5001/IL_TUO_TOKEN
 ```
 
 - `notify-bridge` → nome del servizio Docker, risolto internamente
-- `5000` → porta interna, non esposta sull'host
+- `5001` → porta interna del bridge (non esposta sull'host)
 - `IL_TUO_TOKEN` → valore di `BRIDGE_TOKEN` nel `.env`
+
+Se hai cambiato `BRIDGE_PORT`, aggiorna il numero nell'URL di conseguenza.
 
 ---
 
@@ -125,10 +134,11 @@ Il token del bridge non cambia.
 
 ## Variabili d'ambiente
 
-| Variabile        | Default            | Note                                        |
-|------------------|--------------------|---------------------------------------------|
-| `BRIDGE_TOKEN`   | **obbligatorio**   | Token di autenticazione del bridge          |
-| `RESEND_API_KEY` | **obbligatorio**   | API key Resend (`re_...`)                   |
-| `MAIL_FROM`      | **obbligatorio**   | Mittente, dominio verificato su Resend      |
-| `MAIL_FROM_NAME` | `ChangeDetection`  | Nome visualizzato nel campo "Da:"           |
-| `MAIL_TO`        | **obbligatorio**   | Destinatari, separati da virgola            |
+| Variabile        | Default            | Note                                                      |
+|------------------|--------------------|-----------------------------------------------------------|
+| `BRIDGE_TOKEN`   | **obbligatorio**   | Token di autenticazione del bridge                        |
+| `BRIDGE_PORT`    | `5001`             | Porta interna del container (non esposta sull'host)       |
+| `RESEND_API_KEY` | **obbligatorio**   | API key Resend (`re_...`)                                 |
+| `MAIL_FROM`      | **obbligatorio**   | Mittente, dominio verificato su Resend                    |
+| `MAIL_FROM_NAME` | `ChangeDetection`  | Nome visualizzato nel campo "Da:"                         |
+| `MAIL_TO`        | **obbligatorio**   | Destinatari, separati da virgola                          |

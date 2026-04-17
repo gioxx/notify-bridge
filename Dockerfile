@@ -11,6 +11,7 @@ COPY app.py .
 RUN adduser --disabled-password --gecos "" appuser
 USER appuser
 
-EXPOSE 5000
+# Default internal port (override with BRIDGE_PORT env var)
+EXPOSE 5001
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "30", "app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${BRIDGE_PORT:-5001} --workers 2 --timeout 30 app:app"]

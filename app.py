@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 # ── Config from environment ──────────────────────────────────────────────────
 BRIDGE_TOKEN   = os.environ["BRIDGE_TOKEN"]         # required, no default
+BRIDGE_PORT    = int(os.environ.get("BRIDGE_PORT", "5001"))  # default 5001 to avoid conflict with changedetection
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]        # re_xxxxxxxxxxxx
 MAIL_FROM      = os.environ["MAIL_FROM"]             # must be a Resend-verified domain address
 MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "ChangeDetection")
@@ -78,7 +79,7 @@ def _verify_token(token_from_url: str) -> bool:
 # ── Apprise json:// compatible endpoint ─────────────────────────────────────
 #
 # changedetection.io calls Apprise with:
-#   json://notify-bridge:5000/<TOKEN>
+#   json://notify-bridge:5001/<TOKEN>
 # which Apprise translates to POST /notify/<TOKEN>
 #
 # Apprise json:// payload:
@@ -122,4 +123,4 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=BRIDGE_PORT)
