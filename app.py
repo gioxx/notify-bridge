@@ -7,6 +7,7 @@ Compatible with changedetection.io Apprise notifications via json:// schema.
 import logging
 import os
 import secrets
+from urllib.parse import unquote
 
 import httpx
 from flask import Flask, abort, jsonify, request
@@ -82,8 +83,10 @@ def _send_via_resend(subject: str, body_html: str, body_text: str) -> None:
 
 
 def _verify_token(token_from_url: str) -> bool:
-    """Use constant-time comparison to reduce timing attack risk."""
-    return secrets.compare_digest(token_from_url, BRIDGE_TOKEN)
+    """Use constant-time comparison after normalizing URL encoding."""
+    normalized_url_token = unquote(token_from_url).strip()
+    normalized_env_token = unquote(BRIDGE_TOKEN).strip()
+    return secrets.compare_digest(normalized_url_token, normalized_env_token)
 
 
 def _extract_message_content(data: dict) -> tuple[str, str, str]:
