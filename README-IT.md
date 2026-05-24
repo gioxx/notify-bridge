@@ -1,5 +1,7 @@
 # notify-bridge
 
+[![](https://img.shields.io/github/issues/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/issues) [![](https://img.shields.io/github/issues-pr-raw/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/pulls) [![](https://img.shields.io/docker/pulls/gfsolone/notify-bridge.svg)](https://hub.docker.com/r/gfsolone/notify-bridge) [![](https://img.shields.io/docker/image-size/gfsolone/notify-bridge/latest.svg)](https://hub.docker.com/r/gfsolone/notify-bridge)
+
 Microservizio bridge che riceve notifiche da **changedetection.io** tramite
 un endpoint compatibile con Apprise (`json://`) e le inoltra via
 **[Resend](https://resend.com) API**.
