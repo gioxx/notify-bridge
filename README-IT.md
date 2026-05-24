@@ -6,7 +6,7 @@ Le credenziali (API key Resend) rimangono confinate nel container Docker e non s
 
 [![](https://img.shields.io/github/issues/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/issues)
 [![](https://img.shields.io/github/issues-pr-raw/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/pulls)
-![MIT License](https://img.shields.io/github/license/gioxx/m365-tenant-checker)
+![MIT License](https://img.shields.io/github/license/gioxx/notify-bridge)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
 [![](https://img.shields.io/docker/pulls/gfsolone/notify-bridge.svg)](https://hub.docker.com/r/gfsolone/notify-bridge)
 [![](https://img.shields.io/docker/image-size/gfsolone/notify-bridge/latest.svg)](https://hub.docker.com/r/gfsolone/notify-bridge)
