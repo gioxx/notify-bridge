@@ -1,14 +1,15 @@
 # notify-bridge
 
-[![](https://img.shields.io/github/issues/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/issues) [![](https://img.shields.io/github/issues-pr-raw/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/pulls) [![](https://img.shields.io/docker/pulls/gfsolone/notify-bridge.svg)](https://hub.docker.com/r/gfsolone/notify-bridge) [![](https://img.shields.io/docker/image-size/gfsolone/notify-bridge/latest.svg)](https://hub.docker.com/r/gfsolone/notify-bridge)
+Bridge microservice that receives notifications from **changedetection.io** through an Apprise-compatible (`json://`) endpoint and forwards them via the **[Resend](https://resend.com) API**.
 
-Bridge microservice that receives notifications from **changedetection.io**
-through an Apprise-compatible (`json://`) endpoint and forwards them via the
-**[Resend](https://resend.com) API**.
+Resend API credentials stay confined to the Docker container and are never exposed to changedetection. The bridge authentication token can be revoked at any time without touching the Resend account.
 
-Resend API credentials stay confined to the Docker container and are never
-exposed to changedetection. The bridge authentication token can be revoked at
-any time without touching the Resend account.
+[![](https://img.shields.io/github/issues/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/issues)
+[![](https://img.shields.io/github/issues-pr-raw/gioxx/notify-bridge.svg)](https://github.com/gioxx/notify-bridge/pulls)
+![MIT License](https://img.shields.io/github/license/gioxx/m365-tenant-checker)
+![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
+[![](https://img.shields.io/docker/pulls/gfsolone/notify-bridge.svg)](https://hub.docker.com/r/gfsolone/notify-bridge)
+[![](https://img.shields.io/docker/image-size/gfsolone/notify-bridge/latest.svg)](https://hub.docker.com/r/gfsolone/notify-bridge)
 
 ---
 
